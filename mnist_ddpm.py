@@ -126,7 +126,7 @@ def plot_grid(tensors, title, path, nrow=8):
 
 def plot_forward_grid(x0_one, alpha_bar, path):
     """One image -> progressively noised x_t."""
-    steps = [0, 10, 20, 30, 50, 70, 99]
+    steps = [0, 10, 20, 30, 50, 70, 90, 99]
     imgs = []
     for ti in steps:
         t = torch.tensor([ti], device=DEVICE)
@@ -142,14 +142,14 @@ def plot_forward_grid(x0_one, alpha_bar, path):
 def plot_reverse_trajectory(model, betas, alphas, alpha_bar, path):
     """Pure noise -> denoise snapshots."""
     x = torch.randn(1, 1, 28, 28, device=DEVICE)
-    snaps = [x.clone()]
-    show_at = {99, 80, 60, 40, 20, 10, 5, 0}
+    snaps = [x.clone()]  # x_T; 8 panels = this + 7 steps below (not t=99)
+    show_at = {80, 60, 40, 20, 10, 5, 0}
     for ti in range(T - 1, -1, -1):
         t = torch.tensor([ti], device=DEVICE, dtype=torch.long)
         x = reverse_step(x, t, model, betas, alphas, alpha_bar)
         if ti in show_at:
             snaps.append(x.clone())
-    snaps = list(reversed(snaps))  # noisy -> clean
+    # snaps: x_T (noisy) -> ... -> x_0 (clean), left to right
     plot_grid(snaps, "Reverse denoising", path, nrow=8)
 
 
