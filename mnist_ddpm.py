@@ -10,8 +10,8 @@ from torchvision import datasets, transforms
 
 # --- config ---
 T = 100
-BETA_START, BETA_END = 1e-4, 0.02  # DDPM paper values for T_ref=1000
-T_REF = 1000  # reference steps for the schedule above
+BETA_START, BETA_END = 1e-4, 0.02
+T_REF = 1000  
 BATCH_SIZE = 128
 EPOCHS = 200
 LR = 1e-4
@@ -21,8 +21,6 @@ OUT.mkdir(exist_ok=True)
 
 
 def make_schedule(T_steps: int, device: torch.device):
-    # Paper betas assume T=1000. For smaller T, scale up so x_T ~ N(0,I):
-    #   x_T = sqrt(ab_T) x_0 + sqrt(1-ab_T) eps  =>  want ab_T ~ 0, 1-ab_T ~ 1
     scale = T_REF / T_steps
     betas = torch.linspace(BETA_START, BETA_END, T_steps, device=device) * scale
     betas = betas.clamp(1e-5, 0.999)
@@ -105,7 +103,7 @@ def sample(model, betas, alphas, alpha_bar, n=16):
 def to_img(x):
     """[-1,1] -> (H, W) numpy for imshow."""
     arr = ((x.clamp(-1, 1) + 1) * 0.5).detach().cpu().numpy()
-    return arr.squeeze()  # (1,1,28,28) or (1,28,28) -> (28,28)
+    return arr.squeeze() 
 
 
 def plot_grid(tensors, title, path, nrow=8):
@@ -142,14 +140,13 @@ def plot_forward_grid(x0_one, alpha_bar, path):
 def plot_reverse_trajectory(model, betas, alphas, alpha_bar, path):
     """Pure noise -> denoise snapshots."""
     x = torch.randn(1, 1, 28, 28, device=DEVICE)
-    snaps = [x.clone()]  # x_T; 8 panels = this + 7 steps below (not t=99)
+    snaps = [x.clone()]
     show_at = {80, 60, 40, 20, 10, 5, 0}
     for ti in range(T - 1, -1, -1):
         t = torch.tensor([ti], device=DEVICE, dtype=torch.long)
         x = reverse_step(x, t, model, betas, alphas, alpha_bar)
         if ti in show_at:
             snaps.append(x.clone())
-    # snaps: x_T (noisy) -> ... -> x_0 (clean), left to right
     plot_grid(snaps, "Reverse denoising", path, nrow=8)
 
 
